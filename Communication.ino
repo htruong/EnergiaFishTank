@@ -38,6 +38,10 @@ int statusConfig = 0;
 
 float temperature = -500.0f, humidity= -500.0f;
 
+int pumpStatus = 0;
+unsigned long lastTurnedPumpOn;
+unsigned long maxPumpingTime = 60*60*1000; // 60 minutes
+
 
 char topicSub[128];
 char topicPub[128];
@@ -88,11 +92,22 @@ void loopCommunication() {
   // Check if any message were received
   // on the topic we subsrcived to
   client.loop();
+  autoPumpOff();
   delay(1000);
 }
 
 
-
+void autoPumpOff() {
+  if (pumpStatus == 1) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastTurnedPumpOn >= maxPumpingTime) {
+      // automatically turn the water pump off
+      digitalWrite(CONTROL_PIN, LOW);
+      pumpStatus = 0;
+      Serial.println("Pump is automatically turned off!");
+    }
+  }
+}
 
 
 
@@ -103,11 +118,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (length > MAX_BUF_LEN) length=MAX_BUF_LEN;
   strncpy(buffer, (const char*)payload, length);
   
-  if (strncmp(buffer, "led_on", length) == 0) {
+  if (strncmp(buffer, "pump_on", length) == 0) {
     digitalWrite(CONTROL_PIN, HIGH);
-    Serial.println("Turning LED on");
-  } else if (strncmp(buffer, "led_off", length) == 0) {
+    lastTurnedPumpOn = millis();
+    pumpStatus = 1;
+    Serial.println("Turning PUMP on");
+  } else if (strncmp(buffer, "pump_off", length) == 0) {
     digitalWrite(CONTROL_PIN, LOW);
+    pumpStatus = 0;
+    Serial.println("Turning PUMP off");
   } else {
     Serial.print("Unknown message: ");
     Serial.println(buffer);
@@ -156,7 +175,7 @@ void printHelp() {
 void announceDHTReadings() {
   char tmp[127];
   int length;
-  length = sprintf(tmp, "{sensors:{temperature:%4.2f,humidity:%4.2f}}", temperature, humidity);
+  length = sprintf(tmp, "{\"sensors\":{\"temperature\":%4.2f,\"humidity\":%4.2f}}", temperature, humidity);
   client.publish(topicPubSensors, (uint8_t*)tmp, length);
 }
 

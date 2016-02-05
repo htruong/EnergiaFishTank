@@ -24,7 +24,7 @@ void loopTempReader() {
    // read the value from the sensor:
    getDHTReadings();
    
-    announceDHTReadings();
+   announceDHTReadings();
   }
   
   
@@ -42,10 +42,12 @@ void getDHTReadings()
   }
   
   if (tries < 10) {
-    Serial.print("Temperature: ");
-    Serial.println(temperature);
-    Serial.print("Humidity: ");
+    
+    Serial.print("\tTemperature: ");
+    Serial.print(temperature);
+    Serial.print(" Humidity: ");
     Serial.println(humidity);
+    
   } else {
     Serial.println("Temperature and Humidity reading data is unavailable.");
   }
